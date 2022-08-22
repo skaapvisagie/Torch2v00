@@ -1,4 +1,6 @@
 #include "init.h"
+#include "trigger.h"
+#include "indLedControl.h"
 
 void INIT_init(void)
 {

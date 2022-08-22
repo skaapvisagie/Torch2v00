@@ -1,3 +1,4 @@
+#include "types.h"
 #include "batStatus.h"
 #include "adc.h"
 

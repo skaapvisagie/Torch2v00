@@ -1,6 +1,5 @@
 #include "adc.h"
 
-
 #define BAT_VOLTAGE_PIN   4
 #define CURR_FEEDBACK_PIN 2
 

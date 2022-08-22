@@ -1,4 +1,5 @@
-#include "totchControl.h"
+#include "types.h"
+#include "torchControl.h"
 //
 //void pwm_setup (void)
 //{
