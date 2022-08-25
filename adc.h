@@ -1,5 +1,6 @@
-#ifndef ADC
-#define ADC
+#ifndef ADC_H
+#define ADC_H
+
 #include "types.h"
 
 void ADC_init(void);
