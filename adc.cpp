@@ -5,11 +5,6 @@
 #define ADC_DIV_FACTOR  0x03  //xxxx x011 clk div 8
 #define REF_VOLTAGE_BIT REFS0 //0x20 0b0100 0000
 
-#define BATT_FLAT 514u  //3v3
-#define BATT_LOW  535u  //3v45
-#define BATT_RMS  570u  //3v7
-#define BATT_FULL 661u  //4v2
-
 #define SET_REF_VCC     do{ADMUX &= ~(1 << REFS0);}                     while(0)
 #define SET_REF_1V1     do{ADMUX |= (1 << REFS0);}                      while(0)
 #define SEL_BATT_ADC    do{ADMUX |= (1 << MUX1); ADMUX &= ~(1 << MUX0);}while(0)
@@ -57,3 +52,4 @@ uint16_t ADC_getFbVoltage(void)
   DISABLE_ADC;
   return(adc_result());
 }
+

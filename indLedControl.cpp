@@ -8,8 +8,18 @@
 
 void ILC_init(void)
 {
-  DDRB |= (1 << PB3);// pinMode(IND_LED_PIN, OUTPUT);
+  DDRB |= (1 << PB3);
   TURN_IND_LED_OFF;
+}
+
+void ILC_indicateLowBatt(void)
+{
+	
+}
+
+void ILC_indicateDeadBatt(void)
+{
+	
 }
 
 void ILC_switchLed(uint8_t val)
@@ -24,3 +34,4 @@ void ILC_toggleLed(void)
 {
   TOGGLE_IND_LED;
 }
+
