@@ -1,5 +1,6 @@
 #ifndef ISR_HEADER
 #define ISR_HEADER
+#include <avr/interrupt.h>
 
 #include "types.h"
 
