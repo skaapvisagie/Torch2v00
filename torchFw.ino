@@ -3,6 +3,7 @@
 #include "batStatus.h"
 #include "init.h"
 #include "adc.h"
+#include "timers.h"
 
 //#define DEBUG
 #ifdef DEBUG
@@ -24,8 +25,9 @@ void setup()
 
 void loop() 
 {
-  if(TRIGGER_triggerFound())
-    ILC_toggleLed();
+	Timers_UpdateTimers();
+  // if(TRIGGER_triggerFound())
+    // ILC_toggleLed();
 //
 //  if(ADC_getBatVoltage() >= 500)
 //  {

@@ -1,4 +1,5 @@
 #include "timers.h"
+#include "ISR.h"
 
 #define Max_Char_Size   255u
 #define Tmr1_Flag       10u
@@ -73,13 +74,13 @@ void Timers_UpdateTimers(void)
         // }
     // }
 	
-    if(Timer1)
+    if(ISR_flagSet())
     {
         Allow_Sleep = true;
         
-        Timer1 = 0; 
-        if(IOC_source)
-           Allow_Sleep = false; 
+        ISR_clearFlag(); 
+        // if(IOC_source)
+           // Allow_Sleep = false; 
         
         if(batStatusUpdateTimer)
         {
