@@ -52,8 +52,8 @@ bool TIMRES_timerDone(uint8_t timer)
 
 void Timers_UpdateTimers(void)
 {
-    static uint8_t counter = 0; 
-    static uint8_t Timer1  = 0;
+    // static uint8_t counter = 0; 
+    // static uint8_t Timer1  = 0;
     
     // if(Tmr1_Timer1_Flag)
     // {
@@ -79,8 +79,6 @@ void Timers_UpdateTimers(void)
         Allow_Sleep = true;
         
         ISR_clearFlag(); 
-        // if(IOC_source)
-           // Allow_Sleep = false; 
         
         if(batStatusUpdateTimer)
         {

@@ -4,6 +4,7 @@
 #include "init.h"
 #include "adc.h"
 #include "timers.h"
+#include "ISR.h"
 
 //#define DEBUG
 #ifdef DEBUG
@@ -25,6 +26,7 @@ void setup()
 
 void loop() 
 {
+	ILC_indicateControl();
 	Timers_UpdateTimers();
   // if(TRIGGER_triggerFound())
     // ILC_toggleLed();

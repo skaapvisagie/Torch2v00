@@ -7,7 +7,6 @@ static uint8_t ISR_timerFlag = 0;
 
 ISR(WDT_vect) 
 {
-    //ILC_toggleLed();
 	ISR_timerFlag = 1;
 }
 
