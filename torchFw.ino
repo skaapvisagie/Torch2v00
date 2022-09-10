@@ -1,5 +1,6 @@
 #include "trigger.h"
 #include "indLedControl.h"
+#include "torchControl.h"
 #include "batStatus.h"
 #include "init.h"
 #include "adc.h"
@@ -20,21 +21,12 @@ void setup()
   #ifdef DUBUG
     SoftwareSerial Serial(RX, TX);
     Serial.begin(57600);
-    Serial.println("init");
   #endif   
 }
 
 void loop() 
 {
 	ILC_indicateControl();
+	TC_torchControl();
 	Timers_UpdateTimers();
-  // if(TRIGGER_triggerFound())
-    // ILC_toggleLed();
-//
-//  if(ADC_getBatVoltage() >= 500)
-//  {
-//    ILC_toggleLed();
-//  }
-  //Serial.println(ADC_getBatVoltage());
-  //delay(500);
 }

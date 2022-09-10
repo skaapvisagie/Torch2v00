@@ -4,6 +4,7 @@
 #include "trigger.h"
 #include "PID.h"
 #include "timers.h"
+#include "adc.h"
 
 #define PWM_PIN PB0
 
@@ -17,6 +18,7 @@
 #define MED_CURR 	140u // 1500mA
 #define HIGH_CURR 	233u // 2500mA
 
+#define ALPHA 3u
 
 // Switching freq 10kHz
 #define OFF_DUTYCYCLE 	0u
@@ -26,7 +28,7 @@
 
 #define BATT_STATUS_UPDATE_TIME 1000u
 #define CHANGE_MODE_TIME 		100u
-
+#define CURR_SAMPLE_AVG_TIME	1u
 /* When timer is set to Fast PWM Mode, the freqency can be
 calculated using equation: F = F_CPU / (N * 256) 
 Posible frequencies (@1.2MHz):
@@ -48,6 +50,7 @@ static void pwmStop(void);
 static void pwmWrite (uint8_t val);
 static void pidControl(void);
 static void detNewMode(void);
+static uint8_t EMA(uint8_t currsample, uint8_t newSample);
  
 struct S_ledControl
 {
@@ -70,7 +73,7 @@ static S_ledControl ledControl = { 0,
 void TC_init(void)
 {
 	pwmSetup();
-	pwmWrite(MED_DUTYCYCLE);
+	pwmWrite(LOW_DUTYCYCLE);
 }
 
 static void pwmSetup (void)
@@ -78,7 +81,7 @@ static void pwmSetup (void)
     DDRB |= _BV(PWM_PIN); // set PWM pin as OUTPUT
     TCCR0A |= _BV(WGM01)|_BV(WGM00); // set timer mode to FAST PWM
     TCCR0A |= _BV(COM0A1); // connect PWM signal to pin (AC0A => PB0)
-	TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_8; // set prescaler
+	TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
 }
 
 static void pwmStop(void)
@@ -93,23 +96,16 @@ static void pwmWrite (uint8_t val)
 
 void TC_torchControl(void)
 {
-	if(TRIGGER_triggerFound())
-	{
-		TRIGGER_restTrigger();
-		if(TIMRES_timerDone(E_TIMERS_batStatusUpdateTimer))
-		{
-			BATSTAT_updateBatStatus();
-			TIMERS_startTimer(E_TIMERS_batStatusUpdateTimer, BATT_STATUS_UPDATE_TIME);
-			ledControl.battStatus = BATSTAT_batStatus();
-		}
-		
-		detNewMode();
-	}
+	static uint8_t current = 0;
 	
-	if(ledControl.mode == OFF)
-		pwmWrite(OFF);
-	// else 
-		// pidControl();
+	if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
+	{
+		TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME);
+	}
+	else
+	{
+		current = EMA(current, ADC_getFbVoltage());
+	}
 }
 
 static void detNewMode(void)
@@ -130,6 +126,11 @@ static void detNewMode(void)
 	}
 	
 	TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME);
+}
+
+static uint8_t EMA(uint8_t currsample, uint8_t newSample)
+{
+	return (uint8_t)((newSample*ALPHA + currsample*(10-ALPHA))/10);
 }
 
 	
