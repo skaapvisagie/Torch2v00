@@ -132,6 +132,7 @@ void TC_torchControl(void)
 	else
 	{
 		current = EMA(current, ADC_getFbVoltage());
+		brightnessControl(current); 
 	}
 
  #endif

@@ -1,6 +1,7 @@
 #include "indLedControl.h"
 #include "ISR.h"
 #include "timers.h"
+#include "batStatus.h"
 
 #define IND_LED_PIN PB3
 
@@ -19,11 +20,11 @@ void ILC_init(void)
 
 void ILC_indicateControl(void)
 {
-	if(TIMRES_timerDone(E_TIMERS_batStatusUpdateTimer))
-	{
-		TIMERS_startTimer(E_TIMERS_batStatusUpdateTimer, 50u);
-		ILC_toggleLed(); 
-	}
+	if(BATSTAT_batStatus >= BATSTAT_BAT_LOW)
+		TURN_IND_LED_ON;
+	else
+		TURN_IND_LED_OFF;
+
 }
 
 static void ILC_indicateLowBatt(void)
