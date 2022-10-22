@@ -10,8 +10,6 @@
 
 static void ILC_indicateLowBatt(void);
 static void ILC_indicateDeadBatt(void);
-static void ILC_switchLed(uint8_t val);
-static void ILC_toggleLed(void);
 
 void ILC_init(void)
 {
@@ -50,4 +48,3 @@ void ILC_toggleLed(void)
 {
   TOGGLE_IND_LED;
 }
-

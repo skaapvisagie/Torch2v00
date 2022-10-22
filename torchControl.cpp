@@ -2,9 +2,12 @@
 #include "torchControl.h"
 #include "batStatus.h"
 #include "trigger.h"
-#include "PID.h"
 #include "timers.h"
 #include "adc.h"
+#include "indLedControl.h"
+
+
+#define DEBUG
 
 #define PWM_PIN PB0
 
@@ -13,10 +16,10 @@
 #define MED 	0x02u
 #define HIGH 	0x03u
 
-#define OFF_CURR	0u // 0mA
-#define LOW_CURR 	47u // 500mA
-#define MED_CURR 	140u // 1500mA
-#define HIGH_CURR 	233u // 2500mA
+#define OFF_CURR	  0u    // 0mA
+#define LOW_CURR 	  47u   // 500mA
+#define MED_CURR 	  140u  // 1500mA
+#define HIGH_CURR 	233u  // 2500mA
 
 #define ALPHA 3u
 #define CURRTOLARANCE 10u
@@ -30,7 +33,7 @@
 #define IN_PROGRESS     		1u
 #define MODE_CHANGE_DONE 		0u
 #define MODE_CHANGE_INC_COUNT	10u
-#deifne LED_CONTROL_INC			1u
+#define LED_CONTROL_INC			1u
 
 #define BATT_STATUS_UPDATE_TIME 1000u
 #define CHANGE_MODE_TIME 		100u
@@ -58,7 +61,7 @@ static void pwmWrite (uint8_t val);
 static void pidControl(void);
 static void detNewMode(void);
 static uint8_t EMA(uint8_t currsample, uint8_t newSample);
-static void brightnessControl(uint8_t current)
+static void brightnessControl(uint8_t current);
  
 struct S_ledControl
 {
@@ -86,7 +89,7 @@ static void pwmSetup (void)
     DDRB |= _BV(PWM_PIN); // set PWM pin as OUTPUT
     TCCR0A |= _BV(WGM01)|_BV(WGM00); // set timer mode to FAST PWM
     TCCR0A |= _BV(COM0A1); // connect PWM signal to pin (AC0A => PB0)
-	TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
+	  TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
 }
 
 static void pwmStop(void)
@@ -101,7 +104,20 @@ static void pwmWrite (uint8_t val)
 
 void TC_torchControl(void)
 {
-	static uint8_t current = 0;
+    static uint8_t current = 0;
+    
+#ifdef DEBUG
+  if(ADC_getFbVoltage() >= MED_CURR)
+  {
+    ILC_switchLed( 0 );
+    
+  }
+  else if(ADC_getFbVoltage() >= LOW_CURR)
+  {
+    ILC_toggleLed();
+  }
+  
+#else 
 	
 	if(TRIGGER_triggerFound())
 	{
@@ -111,12 +127,14 @@ void TC_torchControl(void)
 	if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
 	{
 		TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME);
-		brightnessControl(currnet);
+		brightnessControl(current);
 	}
 	else
 	{
 		current = EMA(current, ADC_getFbVoltage());
 	}
+
+ #endif
 }
 
 static void detNewMode(void)
@@ -173,7 +191,7 @@ static void brightnessControl(uint8_t current)
 	
 	if(ledControl.modeChange == IN_PROGRESS)
 	{
-		if(currnet <= (ledControl.targerCurrent + (CURRTOLARANCE*2)) && currnet >= (ledControl.targerCurrent - (CURRTOLARANCE*2)) )
+		if(current <= (ledControl.targerCurrent + (CURRTOLARANCE*2)) && current >= (ledControl.targerCurrent - (CURRTOLARANCE*2)) )
 		{
 			ledControl.modeChange = MODE_CHANGE_DONE;
 			increment = LED_CONTROL_INC;
@@ -186,7 +204,7 @@ static void brightnessControl(uint8_t current)
 	
 	if(current > (ledControl.targerCurrent + CURRTOLARANCE))
 		pwmVal -= increment;
-	else if(currnet < (ledControl.targerCurrent - CURRTOLARANCE))
+	else if(current < (ledControl.targerCurrent - CURRTOLARANCE))
 		pwmVal += increment;
 	
 	pwmWrite(pwmVal);
