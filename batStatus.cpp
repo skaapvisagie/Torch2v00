@@ -1,6 +1,7 @@
 #include "types.h"
 #include "batStatus.h"
 #include "adc.h"
+#include "timers.h"
 
 #define BATT_STAT_UPDATE_TIME 255u
 static uint8_t batStatus = BATSTAT_BAT_STAT_UNKNOWN;    

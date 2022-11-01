@@ -5,7 +5,7 @@
 
 void ADC_init(void);
 
-uint16_t ADC_getBatVoltage(void);
-uint16_t ADC_getFbVoltage(void);
+uint8_t ADC_getBatVoltage(void);
+uint8_t ADC_getFbVoltage(void);
 
 #endif

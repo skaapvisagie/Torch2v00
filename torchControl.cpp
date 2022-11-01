@@ -11,14 +11,14 @@
 
 #define PWM_PIN PB0
 
-#define OFF		0x00u
-#define LOW 	0x01u
-#define MED 	0x02u
-#define HIGH 	0x03u
+#define MODE_OFF	0x00u
+#define MODE_LOW 	0x01u
+#define MODE_MED 	0x02u
+#define MODE_HIGH 	0x03u
 
-#define OFF_CURR	  0u    // 0mA
-#define LOW_CURR 	  47u   // 500mA
-#define MED_CURR 	  140u  // 1500mA
+#define OFF_CURR	0u    // 0mA      
+#define LOW_CURR 	47u   // 500mA    
+#define MED_CURR 	170u  // 1500mA
 #define HIGH_CURR 	233u  // 2500mA
 
 #define ALPHA 3u
@@ -27,7 +27,7 @@
 // Switching freq 10kHz
 #define OFF_DUTYCYCLE 	0u
 #define LOW_DUTYCYCLE 	51u
-#define MED_DUTYCYCLE 	92u
+#define MED_DUTYCYCLE 	140u
 #define HIGH_DUTYCYCLE 	229u
 
 #define IN_PROGRESS     		1u
@@ -49,7 +49,7 @@ Posible frequencies (@1.2MHz):
  -> F(N_1024) 	= 4Hz 		
  (x8 @9.6Mhz) */
  
-#define N_1    (_BV(CS00))				//= 37.5kHz  
+#define N_1    (_BV(CS00))				      //= 37.5kHz  
 #define N_8    (_BV(CS01))              //= 4.68kHz
 #define N_64   (_BV(CS01)|_BV(CS00))    //= 584Hz
 #define N_256  (_BV(CS02))              //= 144Hz
@@ -73,15 +73,17 @@ struct S_ledControl
 };
 
 static S_ledControl ledControl = { 	OFF_CURR,
-									OFF,
+									MODE_OFF,
 									BATSTAT_BAT_STAT_UNKNOWN,
-									0
+									MODE_CHANGE_DONE
 									};
 
 void TC_init(void)
 {
 	pwmSetup();
 	pwmWrite(LOW_DUTYCYCLE);
+	ledControl.mode = MODE_LOW;
+	ledControl.targerCurrent = LOW_CURR;
 }
 
 static void pwmSetup (void)
@@ -89,7 +91,7 @@ static void pwmSetup (void)
     DDRB |= _BV(PWM_PIN); // set PWM pin as OUTPUT
     TCCR0A |= _BV(WGM01)|_BV(WGM00); // set timer mode to FAST PWM
     TCCR0A |= _BV(COM0A1); // connect PWM signal to pin (AC0A => PB0)
-	  TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
+	TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
 }
 
 static void pwmStop(void)
@@ -105,71 +107,57 @@ static void pwmWrite (uint8_t val)
 void TC_torchControl(void)
 {
     static uint8_t current = 0;
-    
-#ifdef DEBUG
-  if(ADC_getFbVoltage() >= MED_CURR)
-  {
-    ILC_switchLed( 0 );
-    
-  }
-  else if(ADC_getFbVoltage() >= LOW_CURR)
-  {
-    ILC_toggleLed();
-  }
-  
-#else 
 	
-	if(TRIGGER_triggerFound())
-	{
-		detNewMode();
-		TRIGGER_restTrigger();
-	}
-	if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
-	{
-		TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME);
-		brightnessControl(current);
-	}
-	else
-	{
-		current = EMA(current, ADC_getFbVoltage());
-		brightnessControl(current); 
-	}
+	// if(TRIGGER_triggerFound())
+	// {
+		// detNewMode();
+		// TRIGGER_restTrigger();
+	// }
+	
+	if(ADC_getBatVoltage() >= 5)
+		ILC_switchLed(ILC_LED_ON);
+	
+	// if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
+	// {
+		// TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME);
+		// current = EMA(current, ADC_getFbVoltage());
+		// brightnessControl(current); 
+	// }
 
- #endif
 }
 
 static void detNewMode(void)
 {	
 	if(TIMRES_timerDone(E_TIMERS_changeModeTimer))
 	{
-		if(ledControl.mode != OFF)
-			ledControl.mode = OFF;
+		if(ledControl.mode != MODE_OFF)
+			ledControl.mode = MODE_OFF;
 		else 
-			ledControl.mode = LOW;
+			ledControl.mode = MODE_LOW;
 	}
 	else
 	{
-		if(ledControl.mode >= HIGH)
-			ledControl.mode = OFF;
+		if(ledControl.mode >= MODE_HIGH)
+			ledControl.mode = MODE_OFF;
 		else 
 			ledControl.mode ++;
 	}
 	
 	switch(ledControl.mode)
 	{
-		case OFF: 
+		case MODE_OFF: 
 			ledControl.targerCurrent = OFF_CURR;
 		break;
 		
-		case LOW:
+		case MODE_LOW:
 			ledControl.targerCurrent = LOW_CURR;
 		break;
 		
-		case MED:
+		case MODE_MED:
 			ledControl.targerCurrent = MED_CURR;
 		break;
 		
-		case HIGH:
+		case MODE_HIGH:
 			ledControl.targerCurrent = HIGH_CURR;
 		break; 
 		
@@ -192,6 +180,7 @@ static void brightnessControl(uint8_t current)
 	
 	if(ledControl.modeChange == IN_PROGRESS)
 	{
+		// current is close to target
 		if(current <= (ledControl.targerCurrent + (CURRTOLARANCE*2)) && current >= (ledControl.targerCurrent - (CURRTOLARANCE*2)) )
 		{
 			ledControl.modeChange = MODE_CHANGE_DONE;
@@ -203,10 +192,21 @@ static void brightnessControl(uint8_t current)
 	else 
 		increment = LED_CONTROL_INC;
 	
-	if(current > (ledControl.targerCurrent + CURRTOLARANCE))
-		pwmVal -= increment;
-	else if(current < (ledControl.targerCurrent - CURRTOLARANCE))
-		pwmVal += increment;
+
+	if(pwmVal < 255 && pwmVal >= 0) // prevent wind up
+	{
+		if(current > (ledControl.targerCurrent + CURRTOLARANCE))
+			pwmVal -= increment;
+		else if(current < (ledControl.targerCurrent - CURRTOLARANCE))
+			pwmVal += increment;
+	}
+	else // if in wind up, reset
+	{
+		if(pwmVal >= 255)
+			pwmVal = 254;
+		else 
+			pwmVal = 0;
+	}
 	
 	pwmWrite(pwmVal);
 		

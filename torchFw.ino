@@ -14,19 +14,23 @@
   #define TX    7   // *** D4, Pin 7 BT   Yellow
 #endif
 
+uint8_t test = 0;
 void setup() 
 {
-  INIT_init();
-
-  #ifdef DUBUG
-    SoftwareSerial Serial(RX, TX);
-    Serial.begin(57600);
-  #endif   
+  INIT_init();  
 }
 
 void loop() 
 {
-	ILC_indicateControl();
-	TC_torchControl();
-	Timers_UpdateTimers();
+ // Serial.println(2);
+ test = ADC_getFbVoltage();
+  Serial.println(test);
+  delay(500);
+//	if(ADC_getBatVoltage() >= 5u)
+// {
+//		ILC_switchLed(ILC_LED_ON);
+// }
+	//ILC_indicateControl();
+	//TC_torchControl();
+	//Timers_UpdateTimers();
 }

@@ -1,4 +1,5 @@
 #include "adc.h"
+#include "indLedControl.h"
 
 #define BAT_VOLTAGE     0x02
 #define CURR_FEEDBACK   0x01
@@ -13,43 +14,40 @@
 #define START_CONV      do{ADCSRA |= (1 << ADSC);}                      while(0)
 #define DISABLE_ADC     do{ADCSRA &= ~(1 << ADEN);}                     while(0)
 #define SET_PRE_SCALER  do{ADCSRA |= (1 << ADC_DIV_FACTOR);}            while(0)
-#define WAIT_FOR_CONV   while(ADCSRA & (1 << ADSC)){}                        // conversion in progress/start bit
 
+#define BATT_READ_SETUP do{ ADMUX = 0b00100010; ADCSRA = 0b10000011;}   while(0)
+#define FB_READ_SETUP   do{ ADMUX = 0b01100001; ADCSRA = 0b10000011;}   while(0)
 
 static uint16_t adc_result(void);
 
 void ADC_init(void)
 {
-  SET_PRE_SCALER;
-  ADCSRA &= ~(1 << ADLAR); // align right
-  DISABLE_ADC;
+//  SET_PRE_SCALER;
+//  ADCSRA &= ~(1 << ADLAR); // align right
+//  DISABLE_ADC;
+//  ADMUX = 0b00100010;   //sets 1.1V IRV, sets ADC3 as input channel,
+//          //and left adjusts
+//  ADCSRA = 0b10000011;  //turn on ADC, keep ADC single conversion mode,
+//                      //and set division factor-8 for 125kHz ADC clock
 }
 
 static uint16_t adc_result(void)
 {
-  return((uint16_t)(ADCL | (ADCH & 0x03) << 8));
+  return((uint16_t)((ADCH << 8) | ADCL));
 }
 
-uint16_t ADC_getBatVoltage(void)
+uint8_t ADC_getBatVoltage(void)
 {
-  SEL_BATT_ADC;
-  SET_REF_VCC;
-  ENABLE_ADC;
-  START_CONV;
-  WAIT_FOR_CONV; // wait for converison to be done
   DISABLE_ADC;
-  return(adc_result());
-  
+  BATT_READ_SETUP; 
+  START_CONV;
+  return(ADCH);               
 }
 
-uint16_t ADC_getFbVoltage(void)
+uint8_t ADC_getFbVoltage(void)
 {
-  SET_REF_1V1;
-  SEL_FB_ADC;
-  ENABLE_ADC;
-  START_CONV;
-  WAIT_FOR_CONV; // wait for converison to be done
   DISABLE_ADC;
-  return(adc_result());
+  FB_READ_SETUP; 
+  START_CONV;
+  return(ADCH); 
 }
-

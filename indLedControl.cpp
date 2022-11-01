@@ -20,7 +20,7 @@ void ILC_init(void)
 
 void ILC_indicateControl(void)
 {
-	if(BATSTAT_batStatus >= BATSTAT_BAT_LOW)
+	if(BATSTAT_batStatus() >= BATSTAT_BAT_LOW)
 		TURN_IND_LED_ON;
 	else
 		TURN_IND_LED_OFF;
@@ -39,7 +39,7 @@ static void ILC_indicateDeadBatt(void)
 
 void ILC_switchLed(uint8_t val)
 {
-  if(val)
+  if(!val)
     TURN_IND_LED_OFF;
   else
     TURN_IND_LED_ON;
