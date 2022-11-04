@@ -22,15 +22,7 @@ void setup()
 
 void loop() 
 {
- // Serial.println(2);
- test = ADC_getFbVoltage();
-  Serial.println(test);
-  delay(500);
-//	if(ADC_getBatVoltage() >= 5u)
-// {
-//		ILC_switchLed(ILC_LED_ON);
-// }
-	//ILC_indicateControl();
-	//TC_torchControl();
-	//Timers_UpdateTimers();
+	ILC_indicateControl();
+	TC_torchControl();
+	Timers_UpdateTimers();
 }

@@ -6,9 +6,9 @@
 
 void INIT_init(void)
 {
-  //TRIGGER_init();
+  TRIGGER_init();
   ILC_init();
- // TC_init();
+  TC_init();
   ADC_init();
   ISR_init();
 }
