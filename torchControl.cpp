@@ -22,7 +22,7 @@
 #define HIGH_CURR 60u   // 2500mA
 
 #define ALPHA         3u
-#define CURRTOLARANCE 10u
+#define CURRTOLARANCE 5u
 
 // Switching freq 10kHz
 #define OFF_DUTYCYCLE 	0u
@@ -37,7 +37,7 @@
 
 #define BATT_STATUS_UPDATE_TIME 1000u
 #define CHANGE_MODE_TIME 		    100u
-#define CURR_SAMPLE_AVG_TIME	  1u
+#define CURR_SAMPLE_AVG_TIME	  5u
 
 /* When timer is set to Fast PWM Mode, the freqency can be
 calculated using equation: F = F_CPU / (N * 256) 
@@ -68,22 +68,19 @@ struct S_ledControl
 	uint8_t targerCurrent;
 	uint8_t mode;
 	uint8_t battStatus;
-	uint8_t modeChange;
-	
 };
 
 static S_ledControl ledControl = { 	OFF_CURR,
 									MODE_OFF,
-									BATSTAT_BAT_STAT_UNKNOWN,
-									MODE_CHANGE_DONE
+									BATSTAT_BAT_STAT_UNKNOWN
 									};
 
 void TC_init(void)
 {
 	pwmSetup();
 	pwmWrite(OFF_DUTYCYCLE);
-	ledControl.mode = MODE_LOW;
-	ledControl.targerCurrent = LOW_CURR;
+	//ledControl.mode = MODE_LOW;
+	//ledControl.targerCurrent = LOW_CURR;
 }
 
 static void pwmSetup (void)
@@ -106,28 +103,35 @@ static void pwmWrite (uint8_t val)
 
 void TC_torchControl(void)
 {
-    static uint8_t current = 0;
+   static uint8_t current = 0;
 	
-	// if(TRIGGER_triggerFound())
-	// {
-		// detNewMode();
-		// TRIGGER_restTrigger();
-	// }
-	
-	 if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
+	 if(TRIGGER_triggerFound())
 	 {
-		 TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME); 
-		 brightnessControl(current); 
+		 detNewMode();
+     ILC_toggleLed();
 	 }
-   else 
-    current = EMA(current, ADC_getFbVoltage());
 
+  if(ledControl.targerCurrent == OFF_CURR)
+  {
+    pwmVal -= LED_CONTROL_INC; //decrement;
+  }
+  else
+  {
+  	 if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
+  	 {
+  		 TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME); 
+  		 brightnessControl(current); 
+  	 }
+     else 
+      current = EMA(current, ADC_getFbVoltage());
+  }
 }
 
 static void detNewMode(void)
 {	
 	if(TIMRES_timerDone(E_TIMERS_changeModeTimer))
 	{
+    TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME);
 		if(ledControl.mode != MODE_OFF)
 			ledControl.mode = MODE_OFF;
 		else 
@@ -162,8 +166,6 @@ static void detNewMode(void)
 		default:
 		break; 
 	}
-	ledControl.modeChange = IN_PROGRESS; 
-	TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME);
 }
 
 static uint8_t EMA(uint8_t currsample, uint8_t newSample)
@@ -176,35 +178,28 @@ static void brightnessControl(uint8_t current)
 	static uint8_t increment  = 0;
 	static uint8_t pwmVal 		= 0; 
 	
-	if(ledControl.modeChange == IN_PROGRESS)
-	{
-		// current is close to target
-		if(current <= (ledControl.targerCurrent + (CURRTOLARANCE*2)) && current >= (ledControl.targerCurrent - (CURRTOLARANCE*2)) )
-		{
-			ledControl.modeChange = MODE_CHANGE_DONE;
-			increment = LED_CONTROL_INC;
-		}
-		else
-			increment = MODE_CHANGE_INC_COUNT;
-	}
-	else 
-		increment = LED_CONTROL_INC;
-	
+//	if(ledControl.modeChange == IN_PROGRESS)
+//	{
+//		// current is close to target
+//		if(current <= (ledControl.targerCurrent + (CURRTOLARANCE*2)) && current >= (ledControl.targerCurrent - (CURRTOLARANCE*2)) )
+//		{
+//			ledControl.modeChange = MODE_CHANGE_DONE;
+//			increment = LED_CONTROL_INC;
+//		}
+//		else
+//			increment = MODE_CHANGE_INC_COUNT;
+//	}
+//	else 
+//		increment = LED_CONTROL_INC;
 
-	if(pwmVal < 255 && pwmVal >= 0) // prevent wind up
-	{
-		if(current > (ledControl.targerCurrent + CURRTOLARANCE))
-			pwmVal -= increment;
-		else if(current < (ledControl.targerCurrent - CURRTOLARANCE))
-			pwmVal += increment;
-	}
-	else // if in wind up, reset
-	{
-		if(pwmVal >= 255)
-			pwmVal = 254;
-		else 
-			pwmVal = 0;
-	}
+
+	if(current > (ledControl.targerCurrent + CURRTOLARANCE))
+		pwmVal -= LED_CONTROL_INC; //decrement;
+	else if(current < (ledControl.targerCurrent - CURRTOLARANCE))
+		pwmVal += LED_CONTROL_INC; //increment;
+
+	if(pwmVal >= 255)
+		pwmVal = 254;
 	
 	pwmWrite(pwmVal);
 		

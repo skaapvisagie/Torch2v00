@@ -22,23 +22,28 @@ static bool getTrigger(void)
 
 bool TRIGGER_triggerFound(void)
 {
-	return(triggerFound); 
+  if(TIMRES_timerDone(E_TIMERS_triggerBlockTimer))
+  {
+    TIMERS_startTimer(E_TIMERS_triggerBlockTimer, TRIGGER_BLOCK_TIME);
+    return(getTrigger()); 
+  }
+  else
+	  return(false); 
 }
 
-void TRIGGER_restTrigger(void)
-{
-	triggerFound = false;
-}
-
-void TRIGGER_checkTirgger(void)
-{	
-	if(TIMRES_timerDone(E_TIMERS_triggerBlockTimer))
-	{
-		if(getTrigger())
-		{
-			TIMERS_startTimer(E_TIMERS_triggerBlockTimer, TRIGGER_BLOCK_TIME);
-			triggerFound = true; 
-		}
-	}
-}
-
+//void TRIGGER_restTrigger(void)
+//{
+//	triggerFound = false;
+//}
+//
+//void TRIGGER_checkTirgger(void)
+//{	
+//	if(TIMRES_timerDone(E_TIMERS_triggerBlockTimer))
+//	{
+//		if(getTrigger())
+//		{
+//			TIMERS_startTimer(E_TIMERS_triggerBlockTimer, TRIGGER_BLOCK_TIME);
+//			triggerFound = true; 
+//		}
+//	}
+//}
