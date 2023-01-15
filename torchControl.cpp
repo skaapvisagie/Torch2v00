@@ -63,17 +63,20 @@ static void pidControl(void);
 static void detNewMode(void);
 static uint8_t EMA(uint8_t currsample, uint8_t newSample);
 static void brightnessControl(uint8_t current);
+static void governMode(void);
  
 struct S_ledControl
 {
 	uint8_t targerCurrent;
 	uint8_t mode;
 	uint8_t battStatus;
+	uint8_t highestModeAllowed; 
 };
 
 static S_ledControl ledControl = { 	OFF_CURR,
 									MODE_OFF,
-									BATSTAT_BAT_STAT_UNKNOWN
+									BATSTAT_BAT_STAT_UNKNOWN,
+									MODE_OFF
 									};
 
 void TC_init(void)
@@ -111,23 +114,24 @@ void TC_torchControl(void)
 {
    static uint8_t current = 0;
 	
-	 if(TRIGGER_triggerFound())
-	 {
-		 detNewMode();
-     ILC_toggleLed();
-	 }
+	if(TRIGGER_triggerFound())
+	{
+		detNewMode(); 
+    // ILC_toggleLed();
+	}
    
-	 current = EMA(current, ADC_getFbVoltage());
-	 if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
-   {
-      TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME); 
-      if(ledControl.targerCurrent == OFF_CURR)
-      {
-        if(pwmRead())
-          pwmWrite(pwmRead() - LED_CONTROL_INC*2); //decrement;
-      }
-      else
-        brightnessControl(current);   
+	governMode();
+	current = EMA(current, ADC_getFbVoltage());
+	if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
+	{
+		TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME); 
+		if(ledControl.targerCurrent == OFF_CURR)
+		{
+			if(pwmRead())
+				pwmWrite(pwmRead() - LED_CONTROL_INC*2); //decrement;
+		}
+		else  
+			brightnessControl(current);   
    }
 }
 
@@ -136,21 +140,45 @@ static void detNewMode(void)
 	if(TIMRES_timerDone(E_TIMERS_changeModeTimer))
 	{
     TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME);
-		if(ledControl.mode != MODE_OFF)
+		if(ledControl.mode != MODE_OFF) // If torch has been on for a while, then turn off if triggerd (!mode change)
 			ledControl.mode = MODE_OFF;
 		else 
-			ledControl.mode = MODE_LOW;
+			ledControl.mode = MODE_LOW; // When turning on, stat in Low mode
 	}
 	else
 	{
-		if(ledControl.mode >= MODE_HIGH)
+		if(ledControl.mode >= ledControl.highestModeAllowed)
 			ledControl.mode = MODE_OFF;
 		else 
-   {
+		{
 			ledControl.mode ++;
-      TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME); // reset timer
-   }
+			TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME); // reset timer
+		}
 	}
+}
+
+static uint8_t EMA(uint8_t currsample, uint8_t newSample)
+{
+	return (uint8_t)((newSample*ALPHA + currsample*(10-ALPHA))/10);
+}
+
+static void brightnessControl(uint8_t current)
+{
+	if(current > (ledControl.targerCurrent + CURRTOLARANCE))
+		pwmWrite(pwmRead() - LED_CONTROL_INC); //decrement;
+	else if(current < (ledControl.targerCurrent - CURRTOLARANCE))
+		pwmWrite(pwmRead() + LED_CONTROL_INC); //increment;	
+}
+
+static void governMode(void)
+{
+	if(BATSTAT_batStatus() <= BATSTAT_BAT_LOW)
+	{
+		if(ledControl.mode > MODE_MED)
+			ledControl.mode = MODE_MED;
+	}
+	else if(BATSTAT_batStatus() <= BATSTAT_BAT_DEAD)
+		ledControl.mode = MODE_OFF;
 	
 	switch(ledControl.mode)
 	{
@@ -174,41 +202,6 @@ static void detNewMode(void)
 		break; 
 	}
 }
-
-static uint8_t EMA(uint8_t currsample, uint8_t newSample)
-{
-	return (uint8_t)((newSample*ALPHA + currsample*(10-ALPHA))/10);
-}
-
-static void brightnessControl(uint8_t current)
-{
-//	if(ledControl.modeChange == IN_PROGRESS)
-//	{
-//		// current is close to target
-//		if(current <= (ledControl.targerCurrent + (CURRTOLARANCE*2)) && current >= (ledControl.targerCurrent - (CURRTOLARANCE*2)) )
-//		{
-//			ledControl.modeChange = MODE_CHANGE_DONE;
-//			increment = LED_CONTROL_INC;
-//		}
-//		else
-//			increment = MODE_CHANGE_INC_COUNT;
-//	}
-//	else 
-//		increment = LED_CONTROL_INC;
-
-
-	if(current > (ledControl.targerCurrent + CURRTOLARANCE))
-		pwmWrite(pwmRead() - LED_CONTROL_INC); //decrement;
-	else if(current < (ledControl.targerCurrent - CURRTOLARANCE))
-		pwmWrite(pwmRead() + LED_CONTROL_INC); //increment;
-
-//	if(pwmVal >= 255)
-//		pwmVal = 254;
-//	
-//	pwmWrite(pwmVal);
-		
-}
-
 	
 
  
