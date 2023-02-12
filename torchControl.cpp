@@ -115,10 +115,7 @@ void TC_torchControl(void)
    static uint8_t current = 0;
 	
 	if(TRIGGER_triggerFound())
-	{
 		detNewMode(); 
-    // ILC_toggleLed();
-	}
    
 	governMode();
 	current = EMA(current, ADC_getFbVoltage());

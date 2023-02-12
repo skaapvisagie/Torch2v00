@@ -11,5 +11,6 @@ void ILC_indicateControl(void);
 
 void ILC_switchLed(uint8_t val);
 void ILC_toggleLed(void);
+void ILC_invokeIndStart(void);
 
 #endif

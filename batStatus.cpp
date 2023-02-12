@@ -17,7 +17,7 @@ void BATSTAT_updateBatStatus(void)
 	
 	if(TIMRES_timerDone(E_TIMERS_batStatusUpdateTimer))
 	{
-		TIMERS_startTimer(E_TIMERS_batStatusUpdateTimer, 50u);
+		TIMERS_startTimer(E_TIMERS_batStatusUpdateTimer, BATT_STAT_UPDATE_TIME);
 		
 		battVoltage = (uint8_t)ADC_getBatVoltage();
 		

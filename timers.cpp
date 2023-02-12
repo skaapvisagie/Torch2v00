@@ -10,6 +10,7 @@ static uint8_t batStatusUpdateTimer = 0x00u;
 static uint8_t triggerBlockTimer    = 0x00u;
 static uint8_t changeModeTimer      = 0x00u;
 static uint8_t currentSampleTimer   = 0x00u;
+static uint8_t indicationLedTimer	= 0x00u;
 
 extern volatile uint8_t Tmr1_Timer1_Flag;
 extern volatile uint8_t IOC_source;
@@ -34,6 +35,10 @@ void TIMERS_startTimer(uint8_t timer, uint8_t setTime)
 		case E_TIMERS_currentSampleTimer:
              currentSampleTimer = setTime;
         break;
+		
+		case E_TIMERS_indicationLedTimer:
+             indicationLedTimer = setTime;
+        break;
     }
 }
 
@@ -52,6 +57,10 @@ bool TIMRES_timerDone(uint8_t timer)
 		
 		case E_TIMERS_currentSampleTimer:
             return (bool)((!currentSampleTimer) ? true : false);
+			
+		case E_TIMERS_indicationLedTimer:
+            return (bool)((!indicationLedTimer) ? true : false);
+			
         default:
             return false; 
     }
@@ -87,7 +96,13 @@ void Timers_UpdateTimers(void)
 		{
 			Allow_Sleep = false;
 			currentSampleTimer--;
-		} 		
+		} 
+
+		if(indicationLedTimer)
+		{
+			Allow_Sleep = false;
+			indicationLedTimer--;
+		}
     }
 }
 
