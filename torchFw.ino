@@ -6,6 +6,7 @@
 #include "adc.h"
 #include "timers.h"
 #include "ISR.h"
+#include <avr/sleep.h>
 
 //#define DEBUG
 
@@ -16,8 +17,29 @@ void setup()
 
 void loop() 
 {
-	//ILC_indicateControl();
 	BATSTAT_updateBatStatus();
+	ILC_indicateControl();
+	TRIGGER_triggerControl();
 	TC_torchControl();
 	Timers_UpdateTimers();
+	
+	if(Timers_Sleep_Allowed() && TC_TorchOff())
+		power_off();
+}
+
+static void power_off(void)
+{
+    // Prepare for sleep
+	ILC_switchLed(1);
+    cli();
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    sleep_enable();
+
+    // Go to sleep
+    sei();
+    sleep_cpu();
+
+    // Clean up after sleep
+    sleep_disable();
+	ILC_switchLed(0);
 }

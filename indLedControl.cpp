@@ -27,6 +27,14 @@ void ILC_init(void)
 
 void ILC_indicateControl(void)
 {
+	static uint8_t oldBatStat = 0x00u;
+	
+	if(BATSTAT_batStatus() != oldBatStat)
+	{
+		ILC_invokeIndStart();
+	}
+	oldBatStat = BATSTAT_batStatus();
+	
 	if(StartInd)
 	{
 		switch(BATSTAT_batStatus())
@@ -41,7 +49,7 @@ void ILC_indicateControl(void)
 			
 			case BATSTAT_BAT_STAT_UNKNOWN: // does not matter if bat stat is OK or unknown, it gets treared the same
 			case BATSTAT_BAT_OK:
-			
+				StartInd = false;
 			break; 
 		}	
 	}	

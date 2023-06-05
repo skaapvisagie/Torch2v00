@@ -41,6 +41,7 @@ uint8_t ADC_getBatVoltage(void)
   DISABLE_ADC;
   BATT_READ_SETUP; 
   START_CONV;
+  while(ADCSRA & (1 << ADSC)); 
   return(ADCH);               
 }
 

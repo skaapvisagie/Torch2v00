@@ -32,12 +32,12 @@
 
 #define IN_PROGRESS     		    1u
 #define MODE_CHANGE_DONE 		    0u
-#define MODE_CHANGE_INC_COUNT	  10u
+#define MODE_CHANGE_INC_COUNT	  	10u
 #define LED_CONTROL_INC			    1u
 
-#define BATT_STATUS_UPDATE_TIME 1000u
-#define CHANGE_MODE_TIME 		    240u
-#define CURR_SAMPLE_AVG_TIME	  1u
+#define CHANGE_MODE_TIME 		240u
+#define CURR_SAMPLE_AVG_TIME	1u
+#define TURN_OFF_TRESHOLD 		10u
 
 /* When timer is set to Fast PWM Mode, the freqency can be
 calculated using equation: F = F_CPU / (N * 256) 
@@ -76,15 +76,13 @@ struct S_ledControl
 static S_ledControl ledControl = { 	OFF_CURR,
 									MODE_OFF,
 									BATSTAT_BAT_STAT_UNKNOWN,
-									MODE_OFF
+									MODE_HIGH
 									};
 
 void TC_init(void)
 {
 	pwmSetup();
 	pwmWrite(OFF_DUTYCYCLE);
-	//ledControl.mode = MODE_LOW;
-	//ledControl.targerCurrent = LOW_CURR;
 }
 
 static void pwmSetup (void)
@@ -92,7 +90,7 @@ static void pwmSetup (void)
     DDRB |= _BV(PWM_PIN); // set PWM pin as OUTPUT
     TCCR0A |= _BV(WGM01)|_BV(WGM00); // set timer mode to FAST PWM
     TCCR0A |= _BV(COM0A1); // connect PWM signal to pin (AC0A => PB0)
-	  TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
+	TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
 }
 
 static void pwmStop(void)
@@ -112,12 +110,13 @@ static uint8_t pwmRead(void)
 
 void TC_torchControl(void)
 {
-   static uint8_t current = 0;
+	static uint8_t current = 0;
 	
 	if(TRIGGER_triggerFound())
 		detNewMode(); 
-   
+	
 	governMode();
+	
 	current = EMA(current, ADC_getFbVoltage());
 	if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
 	{
@@ -125,18 +124,31 @@ void TC_torchControl(void)
 		if(ledControl.targerCurrent == OFF_CURR)
 		{
 			if(pwmRead())
-				pwmWrite(pwmRead() - LED_CONTROL_INC*2); //decrement;
+			{
+				if(pwmRead() <= TURN_OFF_TRESHOLD)
+					pwmWrite(0); // off
+				else
+					pwmWrite(pwmRead() - LED_CONTROL_INC*2); //decrement;
+			}
 		}
-		else  
+		else 
 			brightnessControl(current);   
    }
+}
+
+bool TC_TorchOff(void)
+{
+	if(ledControl.mode == MODE_OFF)
+		return(true);
+	else
+		return(false); 
 }
 
 static void detNewMode(void)
 {	
 	if(TIMRES_timerDone(E_TIMERS_changeModeTimer))
 	{
-    TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME);
+		TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME);
 		if(ledControl.mode != MODE_OFF) // If torch has been on for a while, then turn off if triggerd (!mode change)
 			ledControl.mode = MODE_OFF;
 		else 
@@ -169,14 +181,26 @@ static void brightnessControl(uint8_t current)
 
 static void governMode(void)
 {
-	if(BATSTAT_batStatus() <= BATSTAT_BAT_LOW)
+	switch(BATSTAT_batStatus())
 	{
-		if(ledControl.mode > MODE_MED)
-			ledControl.mode = MODE_MED;
+		case BATSTAT_BAT_STAT_UNKNOWN:
+		case BATSTAT_BAT_OK:
+		break;
+		
+		case BATSTAT_BAT_LOW:
+			if(ledControl.mode > MODE_MED)
+			{
+				ledControl.mode = MODE_MED;
+				ledControl.highestModeAllowed = MODE_MED;
+			}
+		break;
+		
+		case BATSTAT_BAT_DEAD:
+			ledControl.mode = MODE_OFF;
+			ledControl.highestModeAllowed = MODE_OFF;
+		break;		
 	}
-	else if(BATSTAT_batStatus() <= BATSTAT_BAT_DEAD)
-		ledControl.mode = MODE_OFF;
-	
+
 	switch(ledControl.mode)
 	{
 		case MODE_OFF: 

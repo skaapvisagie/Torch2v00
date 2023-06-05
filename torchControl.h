@@ -3,5 +3,6 @@
 
 void TC_init(void);
 void TC_torchControl(void);
+bool TC_TorchOff(void);
 
 #endif

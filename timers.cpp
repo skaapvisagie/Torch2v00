@@ -76,7 +76,7 @@ void Timers_UpdateTimers(void)
         
         if(batStatusUpdateTimer)
         {
-            Allow_Sleep = false; 
+            //Allow_Sleep = false; 
             batStatusUpdateTimer--;
         }
 
@@ -94,7 +94,7 @@ void Timers_UpdateTimers(void)
 
 		if(currentSampleTimer)
 		{
-			Allow_Sleep = false;
+			//Allow_Sleep = false;
 			currentSampleTimer--;
 		} 
 

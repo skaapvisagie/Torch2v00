@@ -16,5 +16,6 @@ void TIMERS_startTimer(uint8_t timer, uint8_t setTime);
 void Timers_UpdateTimers(void);
 
 bool TIMRES_timerDone(uint8_t timer);
+bool Timers_Sleep_Allowed(void);
 
 #endif
