@@ -42,7 +42,7 @@ void ISR_init(void)
     WDTCR |= (1<<WDTIE); // ISR enabled
     WDTCR |= (0<<WDE);   // No system reset
 	
-	ISR_enableBtIsr(); 
+	  ISR_enableBtIsr(); 
   
     sei(); // Enable global interrupts
 }
@@ -59,4 +59,3 @@ void ISR_enableBtIsr(void)
 	GIMSK |= (1<<INT0); // Enable INT0
 	MCUCR |= (1<<ISC01);
 }
-

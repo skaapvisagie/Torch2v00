@@ -32,10 +32,10 @@
 
 #define IN_PROGRESS     		    1u
 #define MODE_CHANGE_DONE 		    0u
-#define MODE_CHANGE_INC_COUNT	  	10u
+#define MODE_CHANGE_INC_COUNT	  10u
 #define LED_CONTROL_INC			    1u
 
-#define CHANGE_MODE_TIME 		240u
+#define CHANGE_MODE_TIME 		  240u
 #define CURR_SAMPLE_AVG_TIME	1u
 #define TURN_OFF_TRESHOLD 		10u
 
@@ -57,6 +57,8 @@ Posible frequencies (@1.2MHz):
 
 static void pwmSetup (void);
 static void pwmStop(void);
+static void disconnectPwmPin(void);
+static void connectPwmPin(void);
 static void pwmWrite (uint8_t val);
 static uint8_t pwmRead(void);
 static void pidControl(void);
@@ -90,16 +92,27 @@ static void pwmSetup (void)
     DDRB |= _BV(PWM_PIN); // set PWM pin as OUTPUT
     TCCR0A |= _BV(WGM01)|_BV(WGM00); // set timer mode to FAST PWM
     TCCR0A |= _BV(COM0A1); // connect PWM signal to pin (AC0A => PB0)
-	TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
+	  TCCR0B = (TCCR0B & ~((1<<CS02)|(1<<CS01)|(1<<CS00))) | N_1; // set prescaler
 }
 
 static void pwmStop(void)
 {
     TCCR0B &= ~((1<<CS02)|(1<<CS01)|(1<<CS00)); // stop the timer
 }
+
+static void disconnectPwmPin(void)
+{
+    TCCR0A &= ~(1 << COM0A1); // disconnect PWM signal to pin (AC0A => PB0)
+    PORTB &= ~(1 << PB0); // set PB0 low
+}
+
+static void connectPwmPin(void)
+{
+  TCCR0A |= _BV(COM0A1); // connect PWM signal to pin (AC0A => PB0)
+}
  
 static void pwmWrite(uint8_t val)
-{
+{ 
     OCR0A = val;
 }
 
@@ -126,7 +139,10 @@ void TC_torchControl(void)
 			if(pwmRead())
 			{
 				if(pwmRead() <= TURN_OFF_TRESHOLD)
+        {
 					pwmWrite(0); // off
+          disconnectPwmPin();
+        }
 				else
 					pwmWrite(pwmRead() - LED_CONTROL_INC*2); //decrement;
 			}
@@ -209,14 +225,17 @@ static void governMode(void)
 		
 		case MODE_LOW:
 			ledControl.targerCurrent = LOW_CURR;
+      connectPwmPin();
 		break;
 		
 		case MODE_MED:
 			ledControl.targerCurrent = MED_CURR;
+      connectPwmPin();
 		break;
 		
 		case MODE_HIGH:
 			ledControl.targerCurrent = HIGH_CURR;
+     connectPwmPin();
 		break; 
 		
 		default:
