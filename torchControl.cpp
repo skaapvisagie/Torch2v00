@@ -37,7 +37,7 @@
 #define LED_CONTROL_INC			    1u
 
 #define CHANGE_MODE_TIME 		  240u
-#define CURR_SAMPLE_AVG_TIME	1u
+#define CURR_SAMPLE_AVG_TIME	3u
 #define TURN_OFF_TRESHOLD 		10u
 
 /* When timer is set to Fast PWM Mode, the freqency can be
@@ -127,11 +127,15 @@ void TC_torchControl(void)
 	static uint8_t current = 0;
 	
 	if(TRIGGER_triggerFound())
+  {
 		detNewMode(); 
+    governMode();
+  }
 
   if(ledControl.mode != MODE_OFF)
   {
-  	//governMode();
+  	if(BATSTAT_voltageUpdated())
+  	  governMode();
   	
   	current = EMA(current, ADC_getFbVoltage());
   	if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))

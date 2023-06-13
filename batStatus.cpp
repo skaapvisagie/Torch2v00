@@ -5,9 +5,8 @@
 #include "indLedControl.h"
 
 #define BATT_STAT_UPDATE_TIME 240u
-static uint8_t batStatus = BATSTAT_BAT_STAT_UNKNOWN; 
-
-static uint8_t avgBattSamples(void);   
+static uint8_t batStatus = BATSTAT_BAT_STAT_UNKNOWN;   
+static bool batStatusUpdated = false; 
 
 #define BATT_FLAT 129u  //3v3
 #define BATT_LOW  132u  //3v45
@@ -31,7 +30,7 @@ void BATSTAT_updateBatStatus(void)
 		TIMERS_startTimer(E_TIMERS_batStatusUpdateTimer, BATT_STAT_UPDATE_TIME);
 		
 		battVoltage = (uint8_t)ADC_getBatVoltage();
-		
+		batStatusUpdated = true; 
 		if(battVoltage <= BATT_FLAT)
 			batStatus = BATSTAT_BAT_DEAD;
 		
@@ -49,16 +48,13 @@ uint8_t BATSTAT_batStatus(void)
 	return(batStatus);
 }
 
-static uint8_t avgBattSamples(void)
+bool BATSTAT_voltageUpdated(void)
 {
-	// uint16_t avg = 0;
-	// uint8_t i = 0;
-	
-	// for(i = 0; i < SAMPLE_SIZE; i++)
-	// {
-		// avg = avg + (uint8_t)ADC_getBatVoltage();
-	// }
-	
-	// return((uint8_t)(avg/SAMPLE_SIZE));
-	
+	if(batStatusUpdated)
+  {
+    batStatusUpdated = false;
+    return(true); 
+  }
+  else
+    return(false); 
 }

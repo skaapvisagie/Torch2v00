@@ -9,5 +9,6 @@
 void BATSTAT_updateBatStatus(void);
 
 uint8_t BATSTAT_batStatus(void);
+bool BATSTAT_voltageUpdated(void); 
 
 #endif

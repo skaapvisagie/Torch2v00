@@ -18,7 +18,7 @@ void setup()
 void loop() 
 {
 	BATSTAT_updateBatStatus();
-	ILC_indicateControl();
+	//ILC_indicateControl();
 	TRIGGER_triggerControl();
 	TC_torchControl();
 	Timers_UpdateTimers();
