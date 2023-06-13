@@ -20,16 +20,16 @@
 
 static uint16_t adc_result(void);
 
-void ADC_init(void)
-{
-//  SET_PRE_SCALER;
-//  ADCSRA &= ~(1 << ADLAR); // align right
-//  DISABLE_ADC;
-//  ADMUX = 0b00100010;   //sets 1.1V IRV, sets ADC3 as input channel,
-//          //and left adjusts
-//  ADCSRA = 0b10000011;  //turn on ADC, keep ADC single conversion mode,
-//                      //and set division factor-8 for 125kHz ADC clock
-}
+//void ADC_init(void)
+//{
+////  SET_PRE_SCALER;
+////  ADCSRA &= ~(1 << ADLAR); // align right
+////  DISABLE_ADC;
+////  ADMUX = 0b00100010;   //sets 1.1V IRV, sets ADC3 as input channel,
+////          //and left adjusts
+////  ADCSRA = 0b10000011;  //turn on ADC, keep ADC single conversion mode,
+////                      //and set division factor-8 for 125kHz ADC clock
+//}
 
 static uint16_t adc_result(void)
 {

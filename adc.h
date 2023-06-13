@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-void ADC_init(void);
+//void ADC_init(void);
 
 uint8_t ADC_getBatVoltage(void);
 uint8_t ADC_getFbVoltage(void);

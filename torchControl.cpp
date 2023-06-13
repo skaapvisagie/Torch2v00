@@ -11,10 +11,11 @@
 
 #define PWM_PIN PB0
 
-#define MODE_OFF	0x00u
-#define MODE_LOW 	0x01u
-#define MODE_MED 	0x02u
-#define MODE_HIGH 	0x03u
+#define MODE_OFF	    0x00u
+#define MODE_LOW 	    0x01u
+#define MODE_MED 	    0x02u
+#define MODE_HIGH 	  0x03u
+#define MODE_TURN_OFF 0x04u
 
 #define OFF_CURR	0u    // 0mA      
 #define LOW_CURR 	15u   // 500mA    
@@ -127,29 +128,33 @@ void TC_torchControl(void)
 	
 	if(TRIGGER_triggerFound())
 		detNewMode(); 
-	
-	governMode();
-	
-	current = EMA(current, ADC_getFbVoltage());
-	if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
-	{
-		TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME); 
-		if(ledControl.targerCurrent == OFF_CURR)
-		{
-			if(pwmRead())
-			{
-				if(pwmRead() <= TURN_OFF_TRESHOLD)
-        {
-					pwmWrite(0); // off
-          disconnectPwmPin();
-        }
-				else
-					pwmWrite(pwmRead() - LED_CONTROL_INC*2); //decrement;
-			}
-		}
-		else 
-			brightnessControl(current);   
-   }
+
+  if(ledControl.mode != MODE_OFF)
+  {
+  	//governMode();
+  	
+  	current = EMA(current, ADC_getFbVoltage());
+  	if(TIMRES_timerDone(E_TIMERS_currentSampleTimer))
+  	{
+  		TIMERS_startTimer(E_TIMERS_currentSampleTimer, CURR_SAMPLE_AVG_TIME); 
+  		if(ledControl.targerCurrent == OFF_CURR)
+  		{
+  			if(pwmRead())
+  			{
+  				if(pwmRead() <= TURN_OFF_TRESHOLD)
+				  {
+  					pwmWrite(0); // off
+					  disconnectPwmPin();
+					  ledControl.mode = MODE_OFF;
+				  }
+  				else
+  					pwmWrite(pwmRead() - LED_CONTROL_INC*2); //decrement;
+  			}
+  		}
+  		else 
+  			brightnessControl(current);   
+     }
+  }
 }
 
 bool TC_TorchOff(void)
@@ -166,14 +171,14 @@ static void detNewMode(void)
 	{
 		TIMERS_startTimer(E_TIMERS_changeModeTimer, CHANGE_MODE_TIME);
 		if(ledControl.mode != MODE_OFF) // If torch has been on for a while, then turn off if triggerd (!mode change)
-			ledControl.mode = MODE_OFF;
+			ledControl.mode = MODE_TURN_OFF;
 		else 
 			ledControl.mode = MODE_LOW; // When turning on, stat in Low mode
 	}
 	else
 	{
 		if(ledControl.mode >= ledControl.highestModeAllowed)
-			ledControl.mode = MODE_OFF;
+			ledControl.mode = MODE_TURN_OFF;
 		else 
 		{
 			ledControl.mode ++;
@@ -212,7 +217,7 @@ static void governMode(void)
 		break;
 		
 		case BATSTAT_BAT_DEAD:
-			ledControl.mode = MODE_OFF;
+			ledControl.mode = MODE_TURN_OFF;
 			ledControl.highestModeAllowed = MODE_OFF;
 		break;		
 	}
@@ -220,22 +225,23 @@ static void governMode(void)
 	switch(ledControl.mode)
 	{
 		case MODE_OFF: 
+		case MODE_TURN_OFF:
 			ledControl.targerCurrent = OFF_CURR;
 		break;
 		
 		case MODE_LOW:
 			ledControl.targerCurrent = LOW_CURR;
-      connectPwmPin();
+      pwmSetup();//connectPwmPin();
 		break;
 		
 		case MODE_MED:
 			ledControl.targerCurrent = MED_CURR;
-      connectPwmPin();
+      pwmSetup();//connectPwmPin();
 		break;
 		
 		case MODE_HIGH:
 			ledControl.targerCurrent = HIGH_CURR;
-     connectPwmPin();
+      pwmSetup();// connectPwmPin();
 		break; 
 		
 		default:

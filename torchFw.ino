@@ -30,7 +30,10 @@ void loop()
 static void power_off(void)
 {
     // Prepare for sleep
+#ifdef DEBUG    
 	  ILC_switchLed(1); 
+#endif
+
     cli();
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     sleep_enable();
@@ -41,5 +44,8 @@ static void power_off(void)
 
     // Clean up after sleep
     sleep_disable();
+    
+#ifdef DEBUG   
 	  ILC_switchLed(0);
+#endif
 }
